@@ -106,8 +106,10 @@
         "{all}"
       ],
       "url": "http://www.gstatic.com/generate_204",
-      "interval": "10m",
-      "tolerance": 50
+      "interval": "1m",
+      "tolerance": 150,
+      "idle_timeout": "30m",
+	    "interrupt_exist_connections": false
     },
     {
       "type": "direct",
