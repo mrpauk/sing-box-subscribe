@@ -142,15 +142,6 @@
         "outbound": "block"
       },
       {
-        "ip_cidr": [
-          "37.111.0.0/25",
-          "45.41.104.0/24",
-          "103.47.92.0/22",
-          "114.5.192.0/19"
-        ],
-        "outbound": "direct"
-      },
-      {
         "domain": [
           "kbzpay.com",
           "kbzbank.com",
