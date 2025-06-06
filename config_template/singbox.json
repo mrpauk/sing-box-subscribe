@@ -1,0 +1,143 @@
+{
+  "log": {
+    "disabled": false,
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "dns_proxy",
+        "address": "https://1.1.1.1/dns-query",
+        "address_resolver": "dns_resolver"
+      },
+      {
+        "tag": "dns_direct",
+        "address": "https://dns.alidns.com/dns-query",
+        "address_resolver": "dns_resolver",
+        "detour": "direct"
+      },
+      {
+        "tag": "dns_myanmar",
+        "address": "114.5.5.5",
+        "detour": "direct"
+      },
+      {
+        "tag": "dns_fakeip",
+        "address": "fakeip"
+      },
+      {
+        "tag": "dns_resolver",
+        "address": "8.8.8.8",
+        "detour": "direct"
+      },
+      {
+        "tag": "dns_block",
+        "address": "rcode://success"
+      }
+    ],
+    "rules": [
+      {
+        "geosite": ["category-ads-all"],
+        "server": "dns_block"
+      },
+      {
+        "geosite": ["geolocation-mm"],
+        "server": "dns_myanmar"
+      },
+      {
+        "geosite": ["geolocation-!mm"],
+        "query_type": ["A", "AAAA"],
+        "server": "dns_fakeip"
+      },
+      {
+        "geosite": ["geolocation-!mm"],
+        "server": "dns_proxy"
+      }
+    ],
+    "final": "dns_direct",
+    "independent_cache": true,
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    }
+  },
+  "ntp": {
+    "enabled": true,
+    "server": "time.apple.com",
+    "server_port": 123,
+    "interval": "30m",
+    "detour": "direct"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "0.0.0.0",
+      "listen_port": 2080
+    },
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "mixed",
+      "sniff": true,
+      "inet4_address": "172.19.0.1/30",
+      "inet6_address": "fdfe:dcba:9876::1/126"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
+    }
+    // subconverter ထဲက proxy တွေ auto ထည့်သွားမယ်
+  ],
+  "route": {
+    "auto_detect_interface": true,
+    "rules": [
+      {
+        "type": "remote",
+        "format": "sing-box",
+        "tag": "ads",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/category-ads-all.srs"
+      },
+      {
+        "type": "remote",
+        "format": "sing-box",
+        "tag": "mm",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/geolocation-mm.srs"
+      },
+      {
+        "type": "geosite",
+        "tag": "category-ads-all",
+        "outbound": "block"
+      },
+      {
+        "type": "geosite",
+        "tag": "geolocation-!mm",
+        "outbound": "auto"
+      },
+      {
+        "type": "final",
+        "outbound": "direct"
+      }
+    ]
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "path": "cache.db"
+    }
+  }
+}
