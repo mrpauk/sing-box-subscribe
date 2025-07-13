@@ -1,151 +1,172 @@
 {
   "log": {
-    "disabled": false,
     "level": "info",
     "timestamp": true
   },
   "dns": {
+    "strategy": "ipv4_only",
+    "disable_cache": false,
+    "final": "remote",
     "servers": [
       {
-        "tag": "dns_proxy",
-        "address": "tls://1.1.1.1",
-        "address_resolver": "dns_resolver"
+        "address": "1.1.1.1",
+        "detour": "Node Selection",
+        "tag": "remote"
       },
       {
-        "tag": "dns_direct",
-        "address": "h3://dns.alidns.com/dns-query",
-        "address_resolver": "dns_resolver",
-        "detour": "DIRECT"
+        "address": "https://223.5.5.5/dns-query",
+        "detour": "direct",
+        "tag": "local"
       },
       {
-        "tag": "dns_fakeip",
-        "address": "fakeip"
-      },
-      {
-        "tag": "dns_resolver",
-        "address": "8.8.8.8",
-        "detour": "DIRECT"
-      },
-      {
-        "tag": "dns_block",
-        "address": "rcode://success"
+        "address": "rcode://refused",
+        "tag": "block"
       }
     ],
     "rules": [
       {
         "outbound": ["any"],
-        "server": "dns_resolver"
+        "server": "local"
       },
       {
-        "geosite": ["category-ads-all"],
-        "server": "dns_block",
-        "disable_cache": true
+        "clash_mode": "global",
+        "server": "remote"
       },
       {
-        "geosite": ["geolocation-!cn"],
-        "query_type": ["A", "AAAA"],
-        "server": "dns_fakeip"
+        "clash_mode": "direct",
+        "server": "local"
       },
       {
-        "geosite": ["geolocation-!cn"],
-        "server": "dns_proxy"
+        "rule_set": ["geosite-cn"],
+        "server": "local"
+      },
+      {
+        "rule_set": ["category-ads-all"],
+        "server": "block"
       }
-    ],
-    "final": "dns_direct",
-    "independent_cache": true,
-    "fakeip": {
-      "enabled": true,
-      "inet4_range": "198.18.0.0/15"
+    ]
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    },
+    "clash_api": {
+      "default_mode": "Global Proxy",
+      "external_controller": "127.0.0.1:9090",
+      "secret": ""
     }
   },
-  "ntp": {
-    "enabled": true,
-    "server": "time.apple.com",
-    "server_port": 123,
-    "interval": "30m",
-    "detour": "DIRECT"
-  },
   "inbounds": [
+    {
+      "type": "tun",
+      "stack": "system",
+      "mtu": 9000,
+      "auto_route": true,
+      "strict_route": true,
+      "sniff_override_destination": true,
+      "endpoint_independent_nat": true,
+      "domain_strategy": "prefer_ipv4",
+      "address": [
+        "172.19.0.1/30",
+        "2001:0470:f9da:fdfa::1/64"
+      ]
+    },
+    {
+      "type": "socks",
+      "tag": "socks-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2333,
+      "sniff": true,
+      "sniff_override_destination": true,
+      "domain_strategy": "prefer_ipv4",
+      "users": []
+    },
     {
       "type": "mixed",
       "tag": "mixed-in",
       "listen": "127.0.0.1",
-      "listen_port": 2080
-    },
-    {
-      "type": "tun",
-      "tag": "tun-in",
-      "inet4_address": "172.19.0.1/30",
-      "auto_route": true,
-      "strict_route": true,
-      "stack": "mixed",
-      "sniff": true
+      "listen_port": 2334,
+      "sniff": true,
+      "sniff_override_destination": true,
+      "domain_strategy": "prefer_ipv4",
+      "users": []
     }
   ],
-  "outbounds": [],
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "Node Selection",
+      "outbounds": [
+        "Auto",
+        "United States",
+        "Japan",
+        "Hong Kong",
+        "Singapore",
+        "Germany",
+        "United Kingdom",
+        "Taiwan"
+      ]
+    },
+    {
+      "type": "urltest",
+      "tag": "Auto",
+      "outbounds": [
+        "United States",
+        "Japan",
+        "Hong Kong",
+        "Singapore",
+        "Germany",
+        "United Kingdom",
+        "Taiwan"
+      ]
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
   "route": {
-    "rule_set": [
+    "auto_detect_interface": true,
+    "rules": [
+      { "action": "sniff" },
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "clash_mode": "direct", "outbound": "direct" },
+      { "clash_mode": "global", "outbound": "Node Selection" },
       {
-        "tag": "🚫 Block",
-        "format": "singbox",
-        "source": {
-          "type": "http",
-          "url": "https://anti-ad.net/anti-ad-sing-box.srs",
-          "update_interval": "12h"
-        }
+        "rule_set": ["geosite-cn", "geoip-cn"],
+        "outbound": "direct"
       },
       {
-        "tag": "🧠 AI",
-        "format": "singbox",
-        "source": {
-          "type": "http",
-          "url": "https://raw.githubusercontent.com/PoeMyintzu/Demo/main/ai.txt"
-        }
+        "ip_is_private": true,
+        "outbound": "direct"
       },
       {
-        "tag": "🏠 Local",
-        "format": "singbox",
-        "source": {
-          "type": "http",
-          "url": "https://raw.githubusercontent.com/PoeMyintzu/Demo/main/private.txt"
-        }
-      },
-      {
-        "tag": "🌐 Google",
-        "format": "singbox",
-        "source": {
-          "type": "http",
-          "url": "https://raw.githubusercontent.com/PoeMyintzu/Demo/main/google.txt"
-        }
-      },
-      {
-        "tag": "📘 Facebook",
-        "format": "singbox",
-        "source": {
-          "type": "http",
-          "url": "https://raw.githubusercontent.com/PoeMyintzu/Demo/main/facebook.txt"
-        }
+        "rule_set": ["category-ads-all"],
+        "action": "reject"
       }
     ],
-    "rules": [
-      { "rule_set": "🚫 Block", "outbound": "block" },
-      { "rule_set": "🧠 AI", "outbound": "direct" },
-      { "rule_set": "🏠 Local", "outbound": "direct" },
-      { "rule_set": "🌐 Google", "outbound": "direct" },
-      { "rule_set": "📘 Facebook", "outbound": "☁️ Proxy" },
-      { "rule_set": "GEOIP,MM", "outbound": "direct" },
-      { "rule_set": "FINAL", "outbound": "☁️ Proxy" }
-    ],
-    "auto_detect_interface": true
-  },
-  "experimental": {
-    "cache_file": {
-      "enabled": true,
-      "store_fakeip": true
-    },
-    "clash_api": {
-      "external_controller": "127.0.0.1:9090",
-      "external_ui": "dashboard"
-    }
+    "rule_set": [
+      {
+        "tag": "geosite-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+        "download_detour": "Node Selection"
+      },
+      {
+        "tag": "category-ads-all",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+        "download_detour": "Node Selection"
+      },
+      {
+        "tag": "geoip-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/srs/cn.srs",
+        "download_detour": "Node Selection"
+      }
+    ]
   }
 }
